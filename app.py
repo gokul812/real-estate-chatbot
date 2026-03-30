@@ -945,6 +945,11 @@ async def stream_chat(messages: list):
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 @app.get("/")
 async def serve_index():
     index_path = os.path.join(static_dir, "index.html")

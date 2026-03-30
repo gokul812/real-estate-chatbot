@@ -400,9 +400,44 @@
       .empty-title { font-size: 1.15rem; }
       .chip { font-size: .8rem; padding: 8px 14px; }
     }
+  /* ── Wake-up overlay ──────────────────────────────────────── */
+  #wakeup-overlay {
+    position: fixed; inset: 0; background: #1a3c5e;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; color: #fff; gap: 20px;
+    transition: opacity 0.4s ease;
+  }
+  #wakeup-overlay.hidden { opacity: 0; pointer-events: none; }
+  .wakeup-spinner {
+    width: 52px; height: 52px;
+    border: 5px solid rgba(255,255,255,0.2);
+    border-top-color: #f59e0b;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .wakeup-title { font-size: 1.4rem; font-weight: 600; }
+  .wakeup-sub { font-size: 0.95rem; opacity: 0.75; text-align: center; padding: 0 24px; }
+  .wakeup-progress {
+    width: 220px; height: 4px; background: rgba(255,255,255,0.2);
+    border-radius: 2px; overflow: hidden;
+  }
+  .wakeup-progress-bar {
+    height: 100%; background: #f59e0b; border-radius: 2px;
+    width: 0%; transition: width 0.5s ease;
+  }
   </style>
 </head>
 <body>
+
+<!-- Wake-up overlay — shown while server cold-starts, hidden once ready -->
+<div id="wakeup-overlay">
+  <div class="wakeup-spinner"></div>
+  <div class="wakeup-title">Starting up...</div>
+  <div class="wakeup-sub">The server is waking up. This takes about 30–60 seconds on first load.</div>
+  <div class="wakeup-progress"><div class="wakeup-progress-bar" id="wakeup-bar"></div></div>
+</div>
+
 <div id="app">
 
   <!-- Header -->
@@ -455,6 +490,40 @@
 </div>
 
 <script>
+  // ── Wake-up check ─────────────────────────────────────────────
+  // Ping /health until the server responds, then hide the overlay.
+  (async () => {
+    const overlay = document.getElementById('wakeup-overlay');
+    const bar     = document.getElementById('wakeup-bar');
+    let elapsed   = 0;
+    const MAX_WAIT = 90; // seconds before we give up and hide anyway
+
+    const tick = setInterval(() => {
+      elapsed++;
+      bar.style.width = Math.min((elapsed / MAX_WAIT) * 100, 98) + '%';
+    }, 1000);
+
+    const ping = async () => {
+      try {
+        const r = await fetch('/health', { cache: 'no-store' });
+        if (r.ok) {
+          clearInterval(tick);
+          bar.style.width = '100%';
+          setTimeout(() => overlay.classList.add('hidden'), 300);
+          setTimeout(() => overlay.remove(), 800);
+          return;
+        }
+      } catch (_) { /* still starting */ }
+      if (elapsed < MAX_WAIT) setTimeout(ping, 2000);
+      else {
+        clearInterval(tick);
+        overlay.classList.add('hidden');
+        setTimeout(() => overlay.remove(), 800);
+      }
+    };
+    ping();
+  })();
+
   // ── State ────────────────────────────────────────────────────
   let messages = [];        // conversation history sent to API
   let isStreaming = false;
