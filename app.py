@@ -7,7 +7,7 @@ Supports both US (USD) and India/Mumbai (INR) markets.
 import json
 import asyncio
 import os
-import anthropic
+from groq import AsyncGroq
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +16,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional, Any
 
-# ─── Anthropic client ─────────────────────────────────────────────────────────
+# ─── Groq client (free) ───────────────────────────────────────────────────────
 
-client = anthropic.Anthropic()
+client = AsyncGroq()
 
 # ─── Tool Definitions ─────────────────────────────────────────────────────────
 
@@ -157,6 +157,19 @@ TOOLS = [
             "required": ["location"]
         }
     }
+]
+
+# Convert Anthropic tool format → Groq/OpenAI format
+GROQ_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": t["name"],
+            "description": t["description"],
+            "parameters": t["input_schema"],
+        },
+    }
+    for t in TOOLS
 ]
 
 # ─── Mock Tool Implementations ────────────────────────────────────────────────
@@ -872,70 +885,96 @@ def sse_event(data: dict) -> str:
 
 async def stream_chat(messages: list):
     """
-    Async generator that yields SSE-formatted strings.
+    Async generator — yields SSE strings.
+    Uses Groq (free) with llama-3.3-70b-versatile.
     Handles the full tool-call loop within a single SSE connection.
     """
-    loop = asyncio.get_event_loop()
+    # Build Groq message list: system prompt first, then history
+    # Ensure all content values are plain strings (strip Anthropic block objects if any)
+    groq_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for m in messages:
+        content = m["content"]
+        if isinstance(content, list):
+            # Flatten Anthropic-style content blocks to a string
+            text_parts = [b.get("text", "") if isinstance(b, dict) else getattr(b, "text", "") for b in content]
+            content = " ".join(p for p in text_parts if p)
+        groq_messages.append({"role": m["role"], "content": content or ""})
 
     try:
         while True:
-            # We run the blocking SDK call in a thread pool so we don't block the event loop.
-            # Collect all events synchronously inside the thread, then yield them.
-            collected_events = []
+            full_text = ""
+            tool_calls_map: dict = {}   # index → accumulated tool call dict
+            finish_reason = None
 
-            def run_stream():
-                with client.messages.stream(
-                    model="claude-opus-4-6",
-                    max_tokens=16000,
-                    system=SYSTEM_PROMPT,
-                    tools=TOOLS,
-                    messages=messages,
-                    thinking={"type": "adaptive"},
-                ) as stream:
-                    for event in stream:
-                        collected_events.append(event)
-                    return stream.get_final_message()
+            stream = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=groq_messages,
+                tools=GROQ_TOOLS,
+                tool_choice="auto",
+                max_tokens=4096,
+                stream=True,
+            )
 
-            final_message = await loop.run_in_executor(None, run_stream)
+            async for chunk in stream:
+                choice = chunk.choices[0]
+                if choice.finish_reason:
+                    finish_reason = choice.finish_reason
+                delta = choice.delta
 
-            # Process and yield collected events
-            for event in collected_events:
-                if event.type == "content_block_delta":
-                    if event.delta.type == "text_delta" and event.delta.text:
-                        yield sse_event({"type": "text", "content": event.delta.text})
-                        # Small sleep to allow the event loop to flush the response
-                        await asyncio.sleep(0)
+                # Stream text tokens to the client in real time
+                if delta.content:
+                    full_text += delta.content
+                    yield sse_event({"type": "text", "content": delta.content})
 
-            # Append assistant turn to history
-            messages.append({"role": "assistant", "content": final_message.content})
+                # Accumulate tool call fragments (arrive as partial JSON)
+                if delta.tool_calls:
+                    for tc in delta.tool_calls:
+                        i = tc.index
+                        if i not in tool_calls_map:
+                            tool_calls_map[i] = {
+                                "id": "",
+                                "type": "function",
+                                "function": {"name": "", "arguments": ""},
+                            }
+                        if tc.id:
+                            tool_calls_map[i]["id"] = tc.id
+                        if tc.function:
+                            if tc.function.name:
+                                tool_calls_map[i]["function"]["name"] += tc.function.name
+                            if tc.function.arguments:
+                                tool_calls_map[i]["function"]["arguments"] += tc.function.arguments
 
             # No tool calls — we are done
-            if final_message.stop_reason != "tool_use":
+            if finish_reason != "tool_calls":
                 break
 
-            # There are tool calls: execute them and notify the client
-            tool_results = []
-            for block in final_message.content:
-                if block.type == "tool_use":
-                    yield sse_event({
-                        "type": "tool_call",
-                        "name": block.name,
-                        "input": block.input
-                    })
-                    await asyncio.sleep(0)
+            # Build ordered tool call list
+            tool_calls_list = [tool_calls_map[i] for i in sorted(tool_calls_map)]
 
-                    # Execute tool synchronously (all are pure Python / CPU-bound)
-                    result_str = await loop.run_in_executor(
-                        None, execute_tool, block.name, block.input
-                    )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result_str
-                    })
+            # Append assistant turn (with tool_calls) to Groq history
+            groq_messages.append({
+                "role": "assistant",
+                "content": full_text or None,
+                "tool_calls": tool_calls_list,
+            })
 
-            # Feed tool results back and loop
-            messages.append({"role": "user", "content": tool_results})
+            # Execute each tool and feed results back
+            for tc in tool_calls_list:
+                name = tc["function"]["name"]
+                try:
+                    inp = json.loads(tc["function"]["arguments"])
+                except (json.JSONDecodeError, ValueError):
+                    inp = {}
+
+                yield sse_event({"type": "tool_call", "name": name, "input": inp})
+
+                result_str = execute_tool(name, inp)
+
+                groq_messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "content": result_str,
+                })
 
         yield sse_event({"type": "done"})
 
