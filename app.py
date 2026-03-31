@@ -20,12 +20,20 @@ client = AsyncGroq()
 
 # ─── Mumbai Zone Definitions ──────────────────────────────────────────────────
 
+# All Western Railway stations Churchgate → Virar (south to north)
 WESTERN_LINE = [
+    # South Mumbai terminus → mid suburbs
     "churchgate", "marine lines", "charni road", "grant road", "mumbai central",
     "mahalaxmi", "lower parel", "elphinstone", "prabhadevi", "dadar west",
-    "mahim", "bandra", "khar", "santacruz", "vile parle", "andheri",
-    "jogeshwari", "goregaon", "malad", "kandivali", "borivali", "dahisar",
+    "matunga road", "mahim", "bandra", "khar road", "khar", "santacruz",
+    "vile parle", "andheri", "jogeshwari", "goregaon", "malad", "kandivali",
+    "borivali", "dahisar",
+    # Mira-Bhayander & beyond (Mumbai Metropolitan Region, Western Railway)
+    "mira road", "mira-bhayandar", "bhayander", "bhayandar",
+    "naigaon", "vasai road", "vasai", "nallasopara", "nalasopara", "virar",
+    # Notable sub-areas along Western line
     "juhu", "versova", "lokhandwala", "oshiwara", "four bungalows",
+    "vasai-virar", "virar west", "virar east",
 ]
 
 CENTRAL_LINE = [
@@ -51,7 +59,11 @@ MUMBAI_ZONES = list(set(
     + ["mumbai", "bombay", "bkc", "bandra kurla complex", "lower parel", "worli"]
 ))
 
-WALKSCORE_API_KEY = os.environ.get("WALKSCORE_API_KEY", "")
+WALKSCORE_API_KEY  = os.environ.get("WALKSCORE_API_KEY", "")
+RAPIDAPI_KEY       = os.environ.get("RAPIDAPI_KEY", "")
+# Set RAPIDAPI_INDIA_HOST to any free India property API host on rapidapi.com
+# e.g. "indian-property-listing.p.rapidapi.com" or "housing-com.p.rapidapi.com"
+RAPIDAPI_INDIA_HOST = os.environ.get("RAPIDAPI_INDIA_HOST", "indian-property-listing.p.rapidapi.com")
 
 
 def is_mumbai_location(location: str) -> bool:
@@ -78,11 +90,12 @@ TOOLS = [
     {
         "name": "search_properties",
         "description": (
-            "Search for properties in Mumbai — Western Line (Bandra, Andheri, Juhu, Malad, Borivali), "
+            "Search for properties in Mumbai. Covers the full Western Line (Churchgate to Virar — "
+            "Bandra, Andheri, Juhu, Malad, Borivali, Mira Road, Vasai, Nallasopara, Virar), "
             "Central Line (Dadar, Kurla, Ghatkopar, Powai, Mulund, Chembur), "
             "Harbour Line (Wadala, Sewri, Chembur), and South Mumbai "
             "(Colaba, Worli, Lower Parel, Prabhadevi, Malabar Hill). "
-            "All prices in INR. Returns matching listings with RERA ID, floor, society details."
+            "Returns live listings when available, else realistic demo data. All prices in INR."
         ),
         "input_schema": {
             "type": "object",
@@ -256,6 +269,118 @@ def _walk_score(address: str, lat: float, lon: float):
     return None
 
 
+# ─── Live property listing fetcher ───────────────────────────────────────────
+# Uses RapidAPI free tier (50–500 req/month depending on plan).
+# Sign up free at https://rapidapi.com → search "India Real Estate" or "Mumbai Properties"
+# Set env vars: RAPIDAPI_KEY and optionally RAPIDAPI_INDIA_HOST
+
+def _fetch_live_properties(location: str, bedrooms=None, min_price=None,
+                           max_price=None, for_rent=False):
+    """
+    Tries two common RapidAPI India property endpoints.
+    Returns a normalised list of listings, or None if unavailable.
+    """
+    if not RAPIDAPI_KEY:
+        return None
+
+    # Endpoint candidates — tries each in order until one succeeds
+    # Each tuple: (host, path, param_map)
+    candidates = [
+        {
+            "host": RAPIDAPI_INDIA_HOST,
+            "url":  f"https://{RAPIDAPI_INDIA_HOST}/properties",
+            "params": {
+                "city":     "Mumbai",
+                "location": location,
+                "purpose":  "for-rent" if for_rent else "for-sale",
+                "rooms":    str(bedrooms) if bedrooms else None,
+                "priceMin": str(int(min_price)) if min_price else None,
+                "priceMax": str(int(max_price)) if max_price else None,
+                "hitsPerPage": "10",
+            },
+        },
+        {
+            "host": "indian-real-estate4.p.rapidapi.com",
+            "url":  "https://indian-real-estate4.p.rapidapi.com/search",
+            "params": {
+                "location": f"{location} Mumbai",
+                "type":     "rent" if for_rent else "buy",
+                "limit":    "10",
+            },
+        },
+    ]
+
+    for cand in candidates:
+        try:
+            params = {k: v for k, v in cand["params"].items() if v is not None}
+            resp = _httpx.get(
+                cand["url"],
+                headers={
+                    "X-RapidAPI-Key":  RAPIDAPI_KEY,
+                    "X-RapidAPI-Host": cand["host"],
+                },
+                params=params,
+                timeout=8,
+            )
+            if resp.status_code != 200:
+                continue
+
+            raw = resp.json()
+            # Normalise: API may return list or dict with hits/results key
+            hits = raw
+            if isinstance(raw, dict):
+                for key in ("hits", "results", "data", "properties", "listings"):
+                    if key in raw:
+                        hits = raw[key]
+                        break
+
+            if not isinstance(hits, list) or not hits:
+                continue
+
+            listings = []
+            for i, p in enumerate(hits[:8]):
+                price = (p.get("price") or p.get("priceValue") or
+                         p.get("listingPrice") or p.get("amount") or 0)
+                try:
+                    price = int(float(str(price).replace(",", "").replace("₹", "")))
+                except (ValueError, TypeError):
+                    price = 0
+
+                beds  = p.get("bedrooms") or p.get("bhk") or p.get("rooms") or "N/A"
+                baths = p.get("bathrooms") or p.get("bath") or "N/A"
+                sqft  = p.get("area") or p.get("carpetArea") or p.get("superArea") or p.get("squareFootage") or "N/A"
+                ptype = (p.get("type") or p.get("propertyType") or "flat").lower()
+                addr  = (p.get("address") or p.get("title") or p.get("name")
+                         or p.get("locality") or f"Property in {location}, Mumbai")
+
+                listings.append({
+                    "id":            p.get("id", f"LIVE-{i+1}"),
+                    "address":       addr,
+                    "price":         price,
+                    "price_display": _inr_fmt(price) + ("/month" if for_rent else ""),
+                    "bedrooms":      beds,
+                    "bathrooms":     baths,
+                    "sqft":          sqft,
+                    "type":          ptype,
+                    "status":        "for rent" if for_rent else "for sale",
+                    "days_on_market": p.get("daysOnMarket") or p.get("postedDaysAgo", "N/A"),
+                    "floor":         p.get("floor") or p.get("floorNumber", "N/A"),
+                    "society":       p.get("society") or p.get("project") or p.get("building", ""),
+                    "rera_id":       p.get("reraId") or p.get("rera"),
+                    "features":      p.get("amenities") or p.get("features") or [],
+                    "description":   p.get("description") or "",
+                    "source":        f"Live — {cand['host']}",
+                })
+
+            if listings:
+                return listings
+
+        except Exception:
+            continue
+
+    return None
+
+
 # ─── Area price multipliers ────────────────────────────────────────────────────
 
 AREA_CONFIG = {
@@ -289,7 +414,24 @@ AREA_CONFIG = {
     "malad":          {"label": "Malad West",            "mult": 1.0,  "zone": "western"},
     "kandivali":      {"label": "Kandivali West",        "mult": 0.9,  "zone": "western"},
     "borivali":       {"label": "Borivali West",         "mult": 0.85, "zone": "western"},
-    "dahisar":        {"label": "Dahisar",               "mult": 0.7,  "zone": "western"},
+    "dahisar":        {"label": "Dahisar",               "mult": 0.70, "zone": "western"},
+    # Western line — Mira-Bhayander corridor
+    "mira road":      {"label": "Mira Road",             "mult": 0.58, "zone": "western"},
+    "mira-bhayandar": {"label": "Mira-Bhayandar",        "mult": 0.53, "zone": "western"},
+    "bhayander":      {"label": "Bhayandar West",        "mult": 0.50, "zone": "western"},
+    "bhayandar":      {"label": "Bhayandar West",        "mult": 0.50, "zone": "western"},
+    # Western line — Vasai-Virar belt
+    "naigaon":        {"label": "Naigaon",               "mult": 0.38, "zone": "western"},
+    "vasai road":     {"label": "Vasai Road",            "mult": 0.42, "zone": "western"},
+    "vasai":          {"label": "Vasai West",            "mult": 0.40, "zone": "western"},
+    "nallasopara":    {"label": "Nallasopara West",      "mult": 0.32, "zone": "western"},
+    "nalasopara":     {"label": "Nalasopara West",       "mult": 0.32, "zone": "western"},
+    "virar":          {"label": "Virar West",            "mult": 0.36, "zone": "western"},
+    "virar west":     {"label": "Virar West",            "mult": 0.36, "zone": "western"},
+    "virar east":     {"label": "Virar East",            "mult": 0.30, "zone": "western"},
+    # Western line mid-stations
+    "khar road":      {"label": "Khar Road",             "mult": 1.85, "zone": "western"},
+    "matunga road":   {"label": "Matunga Road",          "mult": 1.55, "zone": "western"},
     # Central line
     "dadar":          {"label": "Dadar West",            "mult": 1.8,  "zone": "central"},
     "matunga":        {"label": "Matunga",               "mult": 1.6,  "zone": "central"},
@@ -470,7 +612,15 @@ def search_properties(location, min_price=None, max_price=None, bedrooms=None,
         }
 
     for_rent = (for_sale_or_rent == "rent")
-    listings = _mumbai_listings(loc_clean)
+
+    # Try live API first; fall back to demo data
+    live = _fetch_live_properties(
+        loc_clean, bedrooms=bedrooms,
+        min_price=min_price, max_price=max_price,
+        for_rent=for_rent,
+    )
+    data_source = "live" if live else "demo"
+    listings = live if live else _mumbai_listings(loc_clean)
 
     results = []
     for prop in listings:
@@ -495,13 +645,22 @@ def search_properties(location, min_price=None, max_price=None, bedrooms=None,
                 continue
         results.append(prop)
 
+    note = (
+        "Live data from RapidAPI India property feed."
+        if data_source == "live"
+        else (
+            "Demo data shown. For live listings set RAPIDAPI_KEY env var "
+            "(free at rapidapi.com — search 'India Real Estate')."
+        )
+    )
     return {
         "location": loc_clean,
         "zone": _zone_for(loc_clean),
         "currency": "INR",
+        "data_source": data_source,
         "total_results": len(results),
         "listings": results if results else listings[:3],
-        "note": "Demo data. Integrate 99acres/MagicBricks/Housing.com API for live listings.",
+        "note": note,
     }
 
 
@@ -894,7 +1053,15 @@ def execute_tool(tool_name: str, tool_input: dict) -> str:
     if tool_name == "search_properties":
         result = search_properties(**tool_input)
     elif tool_name == "calculate_emi":
-        result = calculate_emi(**tool_input)
+        # Coerce strings to numbers — LLMs sometimes pass numerics as strings
+        emi_input = dict(tool_input)
+        for key in ("home_price", "down_payment_percent", "annual_interest_rate",
+                    "property_tax_annual", "insurance_annual"):
+            if key in emi_input and emi_input[key] is not None:
+                emi_input[key] = float(str(emi_input[key]).replace(",", "").replace("₹", "").strip())
+        if "loan_term_years" in emi_input and emi_input["loan_term_years"] is not None:
+            emi_input["loan_term_years"] = int(float(str(emi_input["loan_term_years"]).strip()))
+        result = calculate_emi(**emi_input)
     elif tool_name == "get_neighborhood_info":
         result = get_neighborhood_info(**tool_input)
     elif tool_name == "get_market_trends":
@@ -909,7 +1076,7 @@ def execute_tool(tool_name: str, tool_input: dict) -> str:
 SYSTEM_PROMPT = """You are an expert Mumbai real estate advisor specialising exclusively in Mumbai's Western Line, Central Line, Harbour Line, and South Mumbai.
 
 **Your coverage:**
-- Western Line: Churchgate, Marine Lines, Grant Road, Mumbai Central, Mahalaxmi, Lower Parel, Prabhadevi, Dadar West, Mahim, Bandra, Khar, Santacruz, Vile Parle, Andheri, Jogeshwari, Goregaon, Malad, Kandivali, Borivali, Dahisar, Juhu, Versova, Lokhandwala
+- Western Line (Churchgate → Virar — all 28 stations): Churchgate, Marine Lines, Charni Road, Grant Road, Mumbai Central, Mahalaxmi, Lower Parel (Elphinstone), Prabhadevi, Dadar West, Matunga Road, Mahim, Bandra, Khar Road, Santacruz, Vile Parle, Andheri, Jogeshwari, Goregaon, Malad, Kandivali, Borivali, Dahisar, Mira Road, Bhayandar, Naigaon, Vasai Road, Nallasopara, Virar. Also: Juhu, Versova, Lokhandwala (off-station sub-areas)
 - Central Line: Byculla, Parel, Dadar, Matunga, Sion, Kurla, Ghatkopar, Vikhroli, Kanjurmarg, Bhandup, Mulund, Chembur, Powai, Hiranandani
 - Harbour Line: Wadala, Sewri, Mazgaon, Cotton Green, Govandi, Mankhurd
 - South Mumbai: Colaba, Cuffe Parade, Nariman Point, Fort, Malabar Hill, Breach Candy, Pedder Road, Nepean Sea Road, Worli
