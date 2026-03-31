@@ -3,192 +3,344 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Real Estate AI Assistant</title>
+  <title>Mumbai Realty AI — Premium Property Advisor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
-    /* ── Reset & base ─────────────────────────────────────────── */
+    /* ── Reset ───────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue-deep:   #1a3c5e;
-      --blue-mid:    #2457a0;
-      --blue-light:  #3b82f6;
-      --blue-pale:   #dbeafe;
-      --accent:      #f59e0b;
-      --bg:          #f0f4f8;
-      --surface:     #ffffff;
-      --border:      #d1dbe8;
-      --text:        #1e293b;
-      --text-muted:  #64748b;
-      --bubble-user: #2457a0;
-      --bubble-ai:   #ffffff;
-      --radius:      14px;
+      --navy:        #0f1c3f;
+      --navy-mid:    #1a2f5e;
+      --navy-light:  #243878;
+      --gold:        #b8963e;
+      --gold-light:  #d4af61;
+      --gold-pale:   #f5eed8;
+      --cream:       #faf8f3;
+      --cream-dark:  #f0ebe0;
+      --white:       #ffffff;
+      --text:        #1a1a2e;
+      --text-mid:    #3d3d5c;
+      --text-muted:  #8a8aaa;
+      --border:      #e4ddd0;
+      --border-dark: #c8bfaf;
+      --shadow-sm:   0 2px 8px rgba(15,28,63,.08);
+      --shadow-md:   0 4px 20px rgba(15,28,63,.12);
+      --shadow-lg:   0 8px 40px rgba(15,28,63,.16);
+      --radius-sm:   8px;
+      --radius-md:   14px;
+      --radius-lg:   20px;
     }
 
     html, body {
       height: 100%;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--cream);
       color: var(--text);
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Layout ────────────────────────────────────────────────── */
+    /* ── App shell ───────────────────────────────────────────────── */
     #app {
       display: flex;
       flex-direction: column;
       height: 100vh;
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
-      background: var(--surface);
-      box-shadow: 0 0 40px rgba(0,0,0,.12);
+      background: var(--white);
+      box-shadow: var(--shadow-lg);
+      position: relative;
     }
 
-    /* ── Header ────────────────────────────────────────────────── */
+    /* ── Header ──────────────────────────────────────────────────── */
     header {
-      background: var(--blue-deep);
-      color: #fff;
-      padding: 0 24px;
-      height: 64px;
+      background: var(--navy);
+      padding: 0 28px;
+      height: 68px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
       position: relative;
       z-index: 10;
+      /* Subtle noise/texture via SVG */
+      background-image:
+        radial-gradient(circle at 80% 50%, rgba(184,150,62,.12) 0%, transparent 60%),
+        linear-gradient(135deg, #0f1c3f 0%, #1a2f5e 100%);
     }
 
-    .logo-icon {
-      width: 38px;
-      height: 38px;
-      background: var(--accent);
+    .logo-mark {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(184,150,62,.4);
     }
 
-    .logo-icon svg { width: 22px; height: 22px; fill: #fff; }
+    .logo-mark svg { width: 22px; height: 22px; fill: var(--navy); }
 
-    .header-title h1 {
+    .header-text { flex: 1; }
+
+    .header-text h1 {
+      font-family: 'Playfair Display', serif;
       font-size: 1.15rem;
       font-weight: 700;
-      letter-spacing: .01em;
+      color: var(--white);
+      letter-spacing: .02em;
+      line-height: 1.2;
     }
 
-    .header-title p {
-      font-size: .72rem;
-      color: #94b8d6;
+    .header-text p {
+      font-size: .7rem;
+      color: rgba(212,175,97,.8);
       font-weight: 400;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-top: 2px;
     }
 
-    .header-badge {
+    .header-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       margin-left: auto;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.2);
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
       border-radius: 20px;
       padding: 4px 12px;
-      font-size: .72rem;
-      color: #b0d0ea;
-      letter-spacing: .02em;
+      font-size: .68rem;
+      color: rgba(255,255,255,.7);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      font-weight: 500;
     }
 
-    /* ── Chat area ─────────────────────────────────────────────── */
+    .pill-dot {
+      width: 6px; height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .6; transform: scale(.8); }
+    }
+
+    /* ── Zone bar ────────────────────────────────────────────────── */
+    .zone-bar {
+      background: var(--cream-dark);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .zone-bar::-webkit-scrollbar { display: none; }
+
+    .zone-label {
+      font-size: .65rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      white-space: nowrap;
+      margin-right: 4px;
+    }
+
+    .zone-tag {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--white);
+      border: 1px solid var(--border-dark);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: .68rem;
+      color: var(--navy-mid);
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .zone-tag:hover {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: var(--white);
+    }
+
+    .zone-tag .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-western  { background: #3b82f6; }
+    .dot-central  { background: #f59e0b; }
+    .dot-harbour  { background: #10b981; }
+    .dot-south    { background: #8b5cf6; }
+
+    /* ── Chat area ───────────────────────────────────────────────── */
     #chat-area {
       flex: 1;
       overflow-y: auto;
-      padding: 24px 20px 12px;
+      padding: 28px 24px 16px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 20px;
       scroll-behavior: smooth;
+      background: var(--white);
     }
 
-    /* Scrollbar */
-    #chat-area::-webkit-scrollbar { width: 6px; }
+    #chat-area::-webkit-scrollbar { width: 4px; }
     #chat-area::-webkit-scrollbar-track { background: transparent; }
-    #chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    #chat-area::-webkit-scrollbar-thumb {
+      background: var(--border-dark);
+      border-radius: 4px;
+    }
 
-    /* ── Empty state / starters ────────────────────────────────── */
+    /* ── Empty state ─────────────────────────────────────────────── */
     #empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       flex: 1;
-      gap: 20px;
-      padding: 40px 16px;
+      gap: 24px;
+      padding: 48px 20px;
       text-align: center;
     }
 
-    .empty-icon {
-      width: 72px;
-      height: 72px;
-      background: linear-gradient(135deg, var(--blue-deep), var(--blue-mid));
-      border-radius: 20px;
+    .hero-emblem {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(145deg, var(--navy) 0%, var(--navy-mid) 100%);
+      border-radius: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 6px 20px rgba(26,60,94,.3);
+      box-shadow: 0 8px 32px rgba(15,28,63,.2), 0 0 0 1px rgba(184,150,62,.2);
+      position: relative;
     }
 
-    .empty-icon svg { width: 38px; height: 38px; fill: #fff; }
+    .hero-emblem::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 23px;
+      background: linear-gradient(135deg, rgba(184,150,62,.4), transparent 50%);
+      pointer-events: none;
+    }
 
-    .empty-title {
-      font-size: 1.4rem;
+    .hero-emblem svg { width: 40px; height: 40px; fill: var(--gold-light); }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--gold-pale);
+      border: 1px solid rgba(184,150,62,.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .7rem;
+      color: var(--gold);
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      margin-bottom: -8px;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
       font-weight: 700;
-      color: var(--blue-deep);
+      color: var(--navy);
+      line-height: 1.25;
     }
 
-    .empty-sub {
+    .hero-sub {
       font-size: .9rem;
       color: var(--text-muted);
-      max-width: 380px;
+      max-width: 420px;
+      line-height: 1.65;
     }
 
-    .starter-chips {
-      display: flex;
-      flex-wrap: wrap;
+    /* ── Starter chips ───────────────────────────────────────────── */
+    .chips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 10px;
-      justify-content: center;
-      max-width: 600px;
+      max-width: 640px;
+      width: 100%;
     }
 
     .chip {
-      background: var(--surface);
+      background: var(--white);
       border: 1.5px solid var(--border);
-      border-radius: 24px;
-      padding: 10px 18px;
-      font-size: .85rem;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: .82rem;
       cursor: pointer;
-      color: var(--blue-deep);
+      color: var(--text-mid);
       font-weight: 500;
-      transition: background .15s, border-color .15s, box-shadow .15s, transform .1s;
-      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      transition: all .18s;
       text-align: left;
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chip-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--gold-pale);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: .9rem;
     }
 
     .chip:hover {
-      background: var(--blue-pale);
-      border-color: var(--blue-light);
-      box-shadow: 0 3px 10px rgba(36,87,160,.15);
-      transform: translateY(-1px);
+      border-color: var(--gold);
+      box-shadow: 0 4px 16px rgba(184,150,62,.15);
+      transform: translateY(-2px);
+      color: var(--navy);
     }
 
     .chip:active { transform: translateY(0); }
 
-    /* ── Message bubbles ───────────────────────────────────────── */
+    /* ── Messages ────────────────────────────────────────────────── */
     .msg-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: flex-end;
     }
 
     .msg-row.user { flex-direction: row-reverse; }
 
     .avatar {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -196,311 +348,490 @@
       flex-shrink: 0;
       font-size: .75rem;
       font-weight: 700;
-      color: #fff;
     }
 
-    .avatar.ai-av { background: var(--blue-deep); }
-    .avatar.user-av { background: var(--blue-mid); }
+    .avatar.ai-av {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      box-shadow: 0 2px 8px rgba(15,28,63,.25);
+    }
+
+    .avatar.user-av {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      box-shadow: 0 2px 8px rgba(184,150,62,.3);
+    }
+
     .avatar svg { width: 18px; height: 18px; fill: #fff; }
+    .avatar.user-av svg { fill: var(--navy); }
 
     .bubble {
-      max-width: min(72%, 640px);
-      padding: 12px 16px;
-      border-radius: var(--radius);
-      line-height: 1.65;
-      font-size: .92rem;
+      max-width: min(74%, 660px);
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      line-height: 1.7;
+      font-size: .9rem;
       word-break: break-word;
     }
 
     .bubble.user {
-      background: var(--bubble-user);
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
       color: #fff;
       border-bottom-right-radius: 4px;
-      box-shadow: 0 2px 10px rgba(36,87,160,.25);
+      box-shadow: 0 3px 14px rgba(15,28,63,.2);
     }
 
     .bubble.ai {
-      background: var(--bubble-ai);
+      background: var(--cream);
       color: var(--text);
       border-bottom-left-radius: 4px;
       border: 1px solid var(--border);
-      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      box-shadow: var(--shadow-sm);
     }
 
-    /* Markdown inside bubbles */
-    .bubble strong { font-weight: 700; }
+    /* Markdown */
+    .bubble strong { font-weight: 600; color: inherit; }
     .bubble em { font-style: italic; }
 
+    .bubble.ai strong { color: var(--navy); }
+
     .bubble ul, .bubble ol {
-      margin: 8px 0 8px 20px;
+      margin: 8px 0 8px 18px;
     }
 
-    .bubble li { margin: 3px 0; }
-
+    .bubble li { margin: 4px 0; }
     .bubble p { margin: 6px 0; }
     .bubble p:first-child { margin-top: 0; }
     .bubble p:last-child { margin-bottom: 0; }
 
     .bubble h3 {
-      font-size: 1rem;
-      margin: 10px 0 4px;
-      color: var(--blue-deep);
+      font-family: 'Playfair Display', serif;
+      font-size: .98rem;
+      margin: 12px 0 5px;
+      color: var(--navy);
+      font-weight: 600;
     }
 
-    .bubble.user h3 { color: #d4e8ff; }
+    .bubble.user h3 { color: var(--gold-light); }
 
-    /* ── Tool call badge ───────────────────────────────────────── */
+    /* Property card inside bubble */
+    .prop-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin: 10px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .prop-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .prop-price {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .prop-type-badge {
+      background: var(--gold-pale);
+      border: 1px solid rgba(184,150,62,.3);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: .68rem;
+      color: var(--gold);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .prop-address {
+      font-size: .8rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .prop-specs {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .prop-spec {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .78rem;
+      color: var(--text-mid);
+      font-weight: 500;
+    }
+
+    .spec-icon { font-size: .85rem; }
+
+    .prop-rera {
+      font-size: .7rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    .rera-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #16a34a;
+      font-weight: 500;
+    }
+
+    /* ── Tool badge ──────────────────────────────────────────────── */
     .tool-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: #fff8e6;
-      border: 1.5px solid #f59e0b;
-      color: #92400e;
+      gap: 7px;
+      background: var(--gold-pale);
+      border: 1px solid rgba(184,150,62,.35);
+      color: #7c5a12;
       border-radius: 20px;
-      padding: 4px 12px;
-      font-size: .78rem;
+      padding: 5px 13px;
+      font-size: .75rem;
       font-weight: 600;
       margin: 4px 0;
       letter-spacing: .01em;
     }
 
-    .tool-badge .spinner-sm {
-      width: 12px;
-      height: 12px;
-      border: 2px solid #f59e0b;
-      border-top-color: #92400e;
+    .spinner-sm {
+      width: 11px; height: 11px;
+      border: 2px solid rgba(184,150,62,.35);
+      border-top-color: var(--gold);
       border-radius: 50%;
       animation: spin .7s linear infinite;
     }
 
-    /* ── Loading spinner (first token) ────────────────────────── */
+    /* ── Typing dots ─────────────────────────────────────────────── */
     .loading-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: flex-end;
     }
 
     .typing-dots {
-      background: var(--bubble-ai);
+      background: var(--cream);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-md);
       border-bottom-left-radius: 4px;
-      padding: 14px 18px;
+      padding: 16px 20px;
       display: flex;
-      gap: 5px;
+      gap: 6px;
       align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      box-shadow: var(--shadow-sm);
     }
 
     .typing-dots span {
-      width: 8px;
-      height: 8px;
-      background: var(--blue-mid);
+      width: 7px; height: 7px;
+      background: var(--gold);
       border-radius: 50%;
-      animation: bounce 1.2s infinite ease-in-out;
+      animation: bounce 1.3s infinite ease-in-out;
+      opacity: .5;
     }
 
     .typing-dots span:nth-child(2) { animation-delay: .2s; }
     .typing-dots span:nth-child(3) { animation-delay: .4s; }
 
     @keyframes bounce {
-      0%, 80%, 100% { transform: translateY(0); opacity: .6; }
-      40%            { transform: translateY(-6px); opacity: 1; }
+      0%, 80%, 100% { transform: translateY(0); opacity: .5; }
+      40%            { transform: translateY(-7px); opacity: 1; }
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Divider / timestamp ───────────────────────────────────── */
+    /* ── Timestamp ───────────────────────────────────────────────── */
     .timestamp {
       text-align: center;
-      font-size: .7rem;
+      font-size: .67rem;
       color: var(--text-muted);
-      margin: -6px 0;
-      user-select: none;
+      margin: -4px 0;
+      letter-spacing: .02em;
     }
 
-    /* ── Input bar ─────────────────────────────────────────────── */
+    /* ── Input area ──────────────────────────────────────────────── */
     #input-area {
       flex-shrink: 0;
       border-top: 1px solid var(--border);
-      padding: 14px 16px;
-      background: var(--surface);
+      padding: 16px 20px;
+      background: var(--white);
     }
 
     .input-wrap {
       display: flex;
       align-items: flex-end;
       gap: 10px;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
+      background: var(--cream);
+      border: 1.5px solid var(--border-dark);
       border-radius: 24px;
-      padding: 8px 8px 8px 18px;
+      padding: 10px 10px 10px 20px;
       transition: border-color .2s, box-shadow .2s;
     }
 
     .input-wrap:focus-within {
-      border-color: var(--blue-light);
-      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(184,150,62,.12);
     }
 
     #user-input {
       flex: 1;
       border: none;
       background: transparent;
-      font-size: .94rem;
-      font-family: inherit;
+      font-size: .92rem;
+      font-family: 'Inter', sans-serif;
       color: var(--text);
       resize: none;
       outline: none;
       max-height: 140px;
       min-height: 24px;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     #user-input::placeholder { color: var(--text-muted); }
 
     #send-btn {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border-radius: 50%;
       border: none;
-      background: var(--blue-mid);
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
       color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: background .15s, transform .1s;
+      transition: all .15s;
+      box-shadow: 0 2px 8px rgba(15,28,63,.25);
     }
 
-    #send-btn:hover:not(:disabled) { background: var(--blue-deep); transform: scale(1.05); }
+    #send-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--navy-mid) 0%, var(--navy) 100%);
+      box-shadow: 0 4px 14px rgba(15,28,63,.3);
+      transform: scale(1.05);
+    }
+
     #send-btn:active:not(:disabled) { transform: scale(.97); }
-    #send-btn:disabled { background: var(--border); cursor: not-allowed; }
-    #send-btn svg { width: 18px; height: 18px; fill: #fff; pointer-events: none; }
+
+    #send-btn:disabled {
+      background: var(--border-dark);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    #send-btn svg { width: 17px; height: 17px; fill: #fff; pointer-events: none; }
 
     .input-hint {
-      font-size: .7rem;
+      font-size: .67rem;
       color: var(--text-muted);
-      margin-top: 6px;
-      padding: 0 4px;
+      margin-top: 8px;
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    /* ── Responsive ────────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      header { height: 56px; padding: 0 14px; }
-      .header-badge { display: none; }
-      .header-title h1 { font-size: 1rem; }
-      #chat-area { padding: 16px 10px 8px; }
-      .bubble { max-width: 88%; font-size: .88rem; }
-      #input-area { padding: 10px; }
-      .empty-title { font-size: 1.15rem; }
-      .chip { font-size: .8rem; padding: 8px 14px; }
+    .input-hint span { opacity: .5; }
+
+    /* ── Divider ─────────────────────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: .68rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin: 4px 0;
     }
-  /* ── Wake-up overlay ──────────────────────────────────────── */
-  #wakeup-overlay {
-    position: fixed; inset: 0; background: #1a3c5e;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    z-index: 9999; color: #fff; gap: 20px;
-    transition: opacity 0.4s ease;
-  }
-  #wakeup-overlay.hidden { opacity: 0; pointer-events: none; }
-  .wakeup-spinner {
-    width: 52px; height: 52px;
-    border: 5px solid rgba(255,255,255,0.2);
-    border-top-color: #f59e0b;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-  }
-  .wakeup-title { font-size: 1.4rem; font-weight: 600; }
-  .wakeup-sub { font-size: 0.95rem; opacity: 0.75; text-align: center; padding: 0 24px; }
-  .wakeup-progress {
-    width: 220px; height: 4px; background: rgba(255,255,255,0.2);
-    border-radius: 2px; overflow: hidden;
-  }
-  .wakeup-progress-bar {
-    height: 100%; background: #f59e0b; border-radius: 2px;
-    width: 0%; transition: width 0.5s ease;
-  }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Wakeup overlay ──────────────────────────────────────────── */
+    #wakeup-overlay {
+      position: fixed; inset: 0;
+      background: linear-gradient(145deg, var(--navy) 0%, #0a1428 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9999; color: #fff; gap: 24px;
+      transition: opacity .5s ease;
+    }
+
+    #wakeup-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .wakeup-logo {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 32px rgba(184,150,62,.4);
+    }
+
+    .wakeup-logo svg { width: 38px; height: 38px; fill: var(--navy); }
+
+    .wakeup-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 700;
+      letter-spacing: .01em;
+    }
+
+    .wakeup-sub {
+      font-size: .88rem; opacity: .6;
+      text-align: center; padding: 0 32px;
+      line-height: 1.6; max-width: 340px;
+    }
+
+    .wakeup-bar-wrap {
+      width: 200px; height: 3px;
+      background: rgba(255,255,255,.12);
+      border-radius: 2px; overflow: hidden;
+    }
+
+    .wakeup-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+      border-radius: 2px; width: 0%;
+      transition: width .5s ease;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      header { padding: 0 16px; height: 60px; }
+      .zone-bar { padding: 0 16px; }
+      .header-text h1 { font-size: 1rem; }
+      .pill { display: none; }
+      #chat-area { padding: 16px 12px 8px; }
+      .bubble { max-width: 88%; font-size: .86rem; }
+      #input-area { padding: 12px; }
+      .hero-title { font-size: 1.35rem; }
+      .chips-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
-<!-- Wake-up overlay — shown while server cold-starts, hidden once ready -->
+<!-- Wake-up overlay -->
 <div id="wakeup-overlay">
-  <div class="wakeup-spinner"></div>
-  <div class="wakeup-title">Starting up...</div>
-  <div class="wakeup-sub">The server is waking up. This takes about 30–60 seconds on first load.</div>
-  <div class="wakeup-progress"><div class="wakeup-progress-bar" id="wakeup-bar"></div></div>
+  <div class="wakeup-logo">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+  </div>
+  <div class="wakeup-title">Mumbai Realty AI</div>
+  <div class="wakeup-sub">Warming up your premium property advisor. Ready in a moment.</div>
+  <div class="wakeup-bar-wrap">
+    <div class="wakeup-bar" id="wakeup-bar"></div>
+  </div>
 </div>
 
 <div id="app">
 
   <!-- Header -->
   <header>
-    <div class="logo-icon">
+    <div class="logo-mark">
       <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
     </div>
-    <div class="header-title">
-      <h1>Real Estate AI Assistant</h1>
-      <p>Powered by Claude AI</p>
+    <div class="header-text">
+      <h1>Mumbai Realty AI</h1>
+      <p>Premium Property Advisor</p>
     </div>
-    <div class="header-badge">AI-Powered</div>
+    <div class="header-pills">
+      <div class="pill"><span class="pill-dot"></span>Live</div>
+      <div class="pill">Mumbai Only</div>
+    </div>
   </header>
 
-  <!-- Chat messages -->
+  <!-- Zone bar -->
+  <div class="zone-bar">
+    <span class="zone-label">Zones:</span>
+    <div class="zone-tag" onclick="sendStarter('Tell me about South Mumbai luxury properties in Worli and Colaba')"><span class="dot dot-south"></span>South Mumbai</div>
+    <div class="zone-tag" onclick="sendStarter('Find 2 BHK flats in Bandra or Andheri under 3 crore')"><span class="dot dot-western"></span>Western Line</div>
+    <div class="zone-tag" onclick="sendStarter('Show me properties in Powai and Ghatkopar')"><span class="dot dot-central"></span>Central Line</div>
+    <div class="zone-tag" onclick="sendStarter('Properties in Wadala and Chembur Harbour line')"><span class="dot dot-harbour"></span>Harbour Line</div>
+  </div>
+
+  <!-- Chat area -->
   <div id="chat-area">
-    <!-- Empty state shown until first message -->
     <div id="empty-state">
-      <div class="empty-icon">
+      <div class="hero-emblem">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       </div>
-      <div class="empty-title">Your Real Estate Expert</div>
-      <div class="empty-sub">Ask me anything about buying, selling, or renting in Mumbai, India or the US — properties, EMI/mortgages, neighborhoods, and market trends.</div>
-      <div class="starter-chips">
-        <button class="chip" onclick="sendStarter(this)">Find 2 BHK flats in Bandra Mumbai under 3 crore</button>
-        <button class="chip" onclick="sendStarter(this)">Calculate EMI for a 1.5 crore flat in Powai with 20% down</button>
-        <button class="chip" onclick="sendStarter(this)">Tell me about the Andheri neighborhood in Mumbai</button>
-        <button class="chip" onclick="sendStarter(this)">What are Mumbai real estate market trends in 2024?</button>
-        <button class="chip" onclick="sendStarter(this)">Find homes in Austin Texas under $500k</button>
-        <button class="chip" onclick="sendStarter(this)">Compare buying vs renting in Mumbai</button>
+      <div class="hero-tag">Mumbai Exclusive</div>
+      <div class="hero-title">Your Personal<br>Property Advisor</div>
+      <div class="hero-sub">Covering Western, Central, Harbour &amp; South Mumbai — properties, EMI calculations, neighbourhood insights, and market intelligence.</div>
+      <div class="chips-grid">
+        <button class="chip" onclick="sendStarter(this.dataset.q)" data-q="Find 2 BHK flats in Bandra West under ₹3 crore">
+          <div class="chip-icon">🏠</div>
+          <span>2 BHK in Bandra under ₹3 Cr</span>
+        </button>
+        <button class="chip" onclick="sendStarter(this.dataset.q)" data-q="Calculate EMI for a 1.5 crore flat in Powai with 20% down payment at 8.5%">
+          <div class="chip-icon">📊</div>
+          <span>EMI for ₹1.5 Cr flat in Powai</span>
+        </button>
+        <button class="chip" onclick="sendStarter(this.dataset.q)" data-q="Tell me about living in Worli — pros, cons, prices, connectivity">
+          <div class="chip-icon">📍</div>
+          <span>Living in Worli — deep dive</span>
+        </button>
+        <button class="chip" onclick="sendStarter(this.dataset.q)" data-q="What are Mumbai real estate market trends in 2024? Which areas are appreciating most?">
+          <div class="chip-icon">📈</div>
+          <span>Mumbai market trends 2024</span>
+        </button>
+        <button class="chip" onclick="sendStarter(this.dataset.q)" data-q="Show me luxury 3 BHK flats in Lower Parel or Prabhadevi">
+          <div class="chip-icon">✨</div>
+          <span>Luxury 3 BHK in Lower Parel</span>
+        </button>
+        <button class="chip" onclick="sendStarter(this.dataset.q)" data-q="Best areas in Mumbai for ₹80 lakh budget — flats for first-time buyers">
+          <div class="chip-icon">🔑</div>
+          <span>Best areas under ₹80 L budget</span>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Input bar -->
+  <!-- Input -->
   <div id="input-area">
     <div class="input-wrap">
       <textarea
         id="user-input"
-        placeholder="Ask about properties, mortgages, neighborhoods..."
+        placeholder="Ask about properties, EMI, neighbourhoods, market trends…"
         rows="1"
       ></textarea>
-      <button id="send-btn" onclick="sendMessage()" title="Send message">
+      <button id="send-btn" onclick="sendMessage()" title="Send">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
     </div>
-    <div class="input-hint">Press Enter to send &nbsp;·&nbsp; Shift+Enter for new line</div>
+    <div class="input-hint">
+      <span>Enter to send</span>·<span>Shift+Enter for new line</span>
+      <span style="margin-left:auto">Mumbai · INR · RERA verified</span>
+    </div>
   </div>
 
 </div>
 
 <script>
-  // ── Wake-up check ─────────────────────────────────────────────
-  // Ping /health until the server responds, then hide the overlay.
+  // ── Wake-up ────────────────────────────────────────────────────
   (async () => {
     const overlay = document.getElementById('wakeup-overlay');
     const bar     = document.getElementById('wakeup-bar');
     let elapsed   = 0;
-    const MAX_WAIT = 90; // seconds before we give up and hide anyway
+    const MAX     = 90;
 
     const tick = setInterval(() => {
       elapsed++;
-      bar.style.width = Math.min((elapsed / MAX_WAIT) * 100, 98) + '%';
+      bar.style.width = Math.min((elapsed / MAX) * 100, 97) + '%';
     }, 1000);
 
     const ping = async () => {
@@ -510,31 +841,26 @@
           clearInterval(tick);
           bar.style.width = '100%';
           setTimeout(() => overlay.classList.add('hidden'), 300);
-          setTimeout(() => overlay.remove(), 800);
+          setTimeout(() => overlay.remove(), 900);
           return;
         }
-      } catch (_) { /* still starting */ }
-      if (elapsed < MAX_WAIT) setTimeout(ping, 2000);
-      else {
-        clearInterval(tick);
-        overlay.classList.add('hidden');
-        setTimeout(() => overlay.remove(), 800);
-      }
+      } catch (_) {}
+      if (elapsed < MAX) setTimeout(ping, 2000);
+      else { clearInterval(tick); overlay.classList.add('hidden'); setTimeout(() => overlay.remove(), 900); }
     };
     ping();
   })();
 
-  // ── State ────────────────────────────────────────────────────
-  let messages = [];        // conversation history sent to API
+  // ── State ──────────────────────────────────────────────────────
+  let messages    = [];
   let isStreaming = false;
 
-  // ── DOM refs ─────────────────────────────────────────────────
   const chatArea   = document.getElementById('chat-area');
   const emptyState = document.getElementById('empty-state');
   const inputEl    = document.getElementById('user-input');
   const sendBtn    = document.getElementById('send-btn');
 
-  // ── Auto-resize textarea ─────────────────────────────────────
+  // Auto-resize textarea
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
     inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
@@ -547,35 +873,28 @@
     }
   });
 
-  // ── Starter chip ─────────────────────────────────────────────
-  function sendStarter(btn) {
-    inputEl.value = btn.textContent;
+  function sendStarter(qOrBtn) {
+    const q = typeof qOrBtn === 'string' ? qOrBtn : qOrBtn.dataset.q;
+    inputEl.value = q;
     sendMessage();
   }
 
-  // ── Send message ─────────────────────────────────────────────
+  // ── Send ───────────────────────────────────────────────────────
   async function sendMessage() {
     const text = inputEl.value.trim();
     if (!text || isStreaming) return;
 
-    // Hide empty state
     emptyState.style.display = 'none';
-
-    // Append user bubble
     appendUserBubble(text);
-
-    // Clear input
     inputEl.value = '';
     inputEl.style.height = 'auto';
 
-    // Show loading
     const loadingEl = appendLoadingBubble();
-
     isStreaming = true;
     sendBtn.disabled = true;
 
-    let aiBubble = null;     // the live AI bubble element
-    let aiBubbleText = '';   // accumulated markdown text
+    let aiBubble     = null;
+    let aiBubbleText = '';
 
     try {
       const res = await fetch('/api/chat', {
@@ -584,9 +903,7 @@
         body: JSON.stringify({ messages, user_message: text }),
       });
 
-      if (!res.ok) {
-        throw new Error(`Server error ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
 
       const reader  = res.body.getReader();
       const decoder = new TextDecoder();
@@ -597,23 +914,17 @@
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-
-        // SSE messages are delimited by double newlines
         const parts = buffer.split('\n\n');
-        buffer = parts.pop(); // keep incomplete tail
+        buffer = parts.pop();
 
         for (const part of parts) {
           const line = part.trim();
           if (!line.startsWith('data:')) continue;
-
           let payload;
-          try { payload = JSON.parse(line.slice(5).trim()); }
-          catch { continue; }
+          try { payload = JSON.parse(line.slice(5).trim()); } catch { continue; }
 
           if (payload.type === 'text') {
-            // Remove loading dots on first text token
-            if (loadingEl && loadingEl.parentNode) loadingEl.remove();
-
+            if (loadingEl?.parentNode) loadingEl.remove();
             if (!aiBubble) {
               aiBubble = createAiBubble();
               chatArea.appendChild(aiBubble);
@@ -623,10 +934,7 @@
             scrollBottom();
 
           } else if (payload.type === 'tool_call') {
-            // Remove loading dots if still present
-            if (loadingEl && loadingEl.parentNode) loadingEl.remove();
-
-            // Show tool badge inside current AI bubble (or create one)
+            if (loadingEl?.parentNode) loadingEl.remove();
             if (!aiBubble) {
               aiBubble = createAiBubble();
               chatArea.appendChild(aiBubble);
@@ -638,38 +946,28 @@
             scrollBottom();
 
           } else if (payload.type === 'done') {
-            // Stop the spinner on any remaining tool badges
-            aiBubble && aiBubble.querySelectorAll('.spinner-sm').forEach(s => {
+            aiBubble?.querySelectorAll('.spinner-sm').forEach(s => {
               s.style.animation = 'none';
-              s.style.borderTopColor = '#16a34a';
               s.style.borderColor = '#16a34a';
+              s.style.borderTopColor = '#16a34a';
             });
-
-            // Save assistant message to history (plain text, stripped of badges)
             messages.push({ role: 'user',      content: text });
             messages.push({ role: 'assistant', content: aiBubbleText });
 
           } else if (payload.type === 'error') {
-            if (loadingEl && loadingEl.parentNode) loadingEl.remove();
-            if (!aiBubble) {
-              aiBubble = createAiBubble();
-              chatArea.appendChild(aiBubble);
-            }
+            if (loadingEl?.parentNode) loadingEl.remove();
+            if (!aiBubble) { aiBubble = createAiBubble(); chatArea.appendChild(aiBubble); }
             aiBubble.querySelector('.bubble').innerHTML =
-              `<span style="color:#dc2626">Sorry, an error occurred: ${escapeHtml(payload.message)}</span>`;
+              `<span style="color:#dc2626;font-size:.85rem">⚠ ${escHtml(payload.message)}</span>`;
             scrollBottom();
           }
         }
       }
-
     } catch (err) {
-      if (loadingEl && loadingEl.parentNode) loadingEl.remove();
-      if (!aiBubble) {
-        aiBubble = createAiBubble();
-        chatArea.appendChild(aiBubble);
-      }
+      if (loadingEl?.parentNode) loadingEl.remove();
+      if (!aiBubble) { aiBubble = createAiBubble(); chatArea.appendChild(aiBubble); }
       aiBubble.querySelector('.bubble').innerHTML =
-        `<span style="color:#dc2626">Connection error: ${escapeHtml(err.message)}</span>`;
+        `<span style="color:#dc2626;font-size:.85rem">Connection error: ${escHtml(err.message)}</span>`;
       scrollBottom();
     } finally {
       isStreaming = false;
@@ -678,13 +976,13 @@
     }
   }
 
-  // ── DOM helpers ──────────────────────────────────────────────
+  // ── DOM helpers ────────────────────────────────────────────────
 
   function appendUserBubble(text) {
     const row = document.createElement('div');
     row.className = 'msg-row user';
     row.innerHTML = `
-      <div class="bubble user">${renderMarkdown(escapeHtml(text))}</div>
+      <div class="bubble user">${renderMarkdown(escHtml(text))}</div>
       <div class="avatar user-av">
         <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
       </div>`;
@@ -699,9 +997,7 @@
       <div class="avatar ai-av">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       </div>
-      <div class="typing-dots">
-        <span></span><span></span><span></span>
-      </div>`;
+      <div class="typing-dots"><span></span><span></span><span></span></div>`;
     chatArea.appendChild(row);
     scrollBottom();
     return row;
@@ -719,59 +1015,51 @@
   }
 
   function toolLabel(name) {
-    const labels = {
-      search_properties:    'Searching properties...',
-      calculate_mortgage:   'Calculating mortgage...',
-      get_neighborhood_info:'Analyzing neighborhood...',
-      get_market_trends:    'Fetching market trends...',
-    };
-    return labels[name] || `Running ${name}...`;
+    return {
+      search_properties:    '🔍 Searching Mumbai properties…',
+      calculate_emi:        '📊 Calculating EMI & loan details…',
+      get_neighborhood_info:'📍 Analysing neighbourhood…',
+      get_market_trends:    '📈 Fetching market trends…',
+    }[name] || `Running ${name}…`;
   }
 
   function scrollBottom() {
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 
-  // ── Markdown renderer (lightweight) ─────────────────────────
+  // ── Lightweight Markdown ───────────────────────────────────────
   function renderMarkdown(text) {
-    // We work on already-escaped HTML for user bubbles, raw for AI bubbles.
-    // For AI bubbles we escape first then render markdown.
-    let s = text;
-
-    // Escape HTML (only if not already escaped — we detect by checking for &)
-    // Simple rule: if it looks like raw text (no existing tags), escape it.
-    // For AI bubble we receive raw Claude output, so escape then markdown.
-    s = escapeHtml(s);
+    let s = escHtml(text);
 
     // Headings
     s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-    s = s.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+    s = s.replace(/^## (.+)$/gm,  '<h3>$1</h3>');
+    s = s.replace(/^# (.+)$/gm,   '<h3>$1</h3>');
 
-    // Bold
-    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Bold & italic
+    s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    s = s.replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>');
+    s = s.replace(/\*(.+?)\*/g,         '<em>$1</em>');
 
-    // Italic
-    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-    // Bullet lists (lines starting with - or *)
-    s = s.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
-    s = s.replace(/(<li>.*<\/li>(\n|$))+/g, m => `<ul>${m}</ul>`);
+    // Bullet lists
+    s = s.replace(/^[-•] (.+)$/gm, '<li>$1</li>');
+    s = s.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
 
     // Numbered lists
     s = s.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
 
-    // Paragraphs (double newline)
+    // Paragraphs
     const blocks = s.split(/\n{2,}/);
     s = blocks.map(b => {
       b = b.replace(/\n/g, '<br>');
-      if (b.startsWith('<h3>') || b.startsWith('<ul>') || b.startsWith('<ol>') || b.startsWith('<li>')) return b;
+      if (/^<(h3|ul|ol|li|div)/.test(b)) return b;
       return `<p>${b}</p>`;
     }).join('\n');
 
     return s;
   }
 
-  function escapeHtml(str) {
+  function escHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -779,7 +1067,6 @@
       .replace(/"/g, '&quot;');
   }
 
-  // ── Focus input on load ──────────────────────────────────────
   inputEl.focus();
 </script>
 </body>
